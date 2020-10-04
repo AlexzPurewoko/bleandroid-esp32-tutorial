@@ -62,6 +62,7 @@ class ChangePeriodCallbacks : public BLECharacteristicCallbacks
     // get stored value from characteristic
     std::string value = characteristic->getValue();
     int receivedDuration = atoi(value.c_str());
+    Serial.println(receivedDuration);
 
     if (receivedDuration < 1 && receivedDuration > 10)
     {
@@ -84,8 +85,9 @@ class ChangePeriodCallbacks : public BLECharacteristicCallbacks
   void onRead(BLECharacteristic *pCharacteristic)
   {
     char buff[2];
-    buff[0] = getDuration();
+    buff[0] = getDuration() + '0';
     buff[1] = '\0';
+    Serial.println(buff);
     pCharacteristic->setValue(buff);
   }
 };
