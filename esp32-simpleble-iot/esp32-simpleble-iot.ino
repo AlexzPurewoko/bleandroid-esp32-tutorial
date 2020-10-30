@@ -10,6 +10,7 @@
 DHT dhtSensor(23, DHT22);
 char buff[12];
 int hum, temp;
+
 void setup()
 {
   // put your setup code here, to run once:
@@ -24,6 +25,7 @@ void setup()
   }
 
   initializeBLE();
+  initializeLampIndicator();
 }
 
 void loop()
@@ -33,6 +35,7 @@ void loop()
   // flush out to client device if its already connected.
   if (deviceConnected)
   {
+    blinkLamp(1);
     hum = dhtSensor.readHumidity();
     temp = dhtSensor.readTemperature();
 

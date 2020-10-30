@@ -7,37 +7,36 @@ import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
 import android.content.pm.PackageManager
+import android.location.LocationManager
 import android.os.Build
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import android.provider.Settings
 import android.widget.SeekBar
 import android.widget.Toast
+import androidx.annotation.RequiresApi
 import androidx.lifecycle.ViewModelProvider
 import kotlinx.android.synthetic.main.activity_main.*
 
 class MainActivity : AppCompatActivity() {
 
     companion object {
-        const val PERMISSION_KEY = "PERMISSION_BLE"
         const val REQUEST_PERMISSION_LOCATION = 0x22a
         const val REQUEST_ENABLE_BT = 0x22F
     }
     private lateinit var mainViewModel: MainViewModel
-    private lateinit var sharedPreferences: SharedPreferences
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
         toggleConnect.isEnabled = false
-        sharedPreferences = this.getSharedPreferences("shared_pref", Context.MODE_PRIVATE)
+
         val hasFeature = packageManager.hasSystemFeature(PackageManager.FEATURE_BLUETOOTH)
         if(hasFeature) {
-            if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M)
-                requestPermissions(
-                    arrayOf("android.permission.ACCESS_COARSE_LOCATION"),
-                    REQUEST_PERMISSION_LOCATION
-                )
+            if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                reqPermission()
+            }
             else
                 enableBt()
         } else {
@@ -45,8 +44,6 @@ class MainActivity : AppCompatActivity() {
         }
 
         initialize()
-
-        //initialize()
     }
 
     override fun onDestroy() {
@@ -156,16 +153,49 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    @RequiresApi(23)
+    private fun reqPermission() {
+        Utils.displayDialogRequest(this, "Request Permission", "Please Click Enable to run this app!"){
+            requestPermissions(
+                arrayOf(
+                    "android.permission.ACCESS_COARSE_LOCATION",
+                    "android.permission.ACCESS_FINE_LOCATION"
+                ),
+                REQUEST_PERMISSION_LOCATION
+            )
+        }
+
+    }
+
     private fun enableBt() {
         if (!getBluetoothAdapter(this).isEnabled) {
-            Toast.makeText(this, "Enabvling Bluetooth..", Toast.LENGTH_LONG).show()
-            startActivityForResult(
-                Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE),
-                REQUEST_ENABLE_BT
-            )
+            Toast.makeText(this, "Enabling Bluetooth..", Toast.LENGTH_LONG).show()
+            Utils.displayDialogRequest(this, "Enable Bluetooth", "Please click allow to enable your bluetooth and enjoy this application"){
+                startActivityForResult(
+                    Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE),
+                    REQUEST_ENABLE_BT
+                )
+            }
+
         } else {
             permitConnect()
         }
+    }
+
+    private fun enableGPS() {
+        val locationManager = getSystemService(LOCATION_SERVICE) as LocationManager
+
+        if(!locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)){
+            Utils.displayDialogRequest(this, "Enable Location", "Please Enable your location and then click back."){
+                startActivity(
+                    Intent(
+                        Settings.ACTION_LOCATION_SOURCE_SETTINGS
+                    )
+                )
+            }
+        }
+
+
     }
 
     fun getBluetoothAdapter(context: Context): BluetoothAdapter {
@@ -173,6 +203,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun permitConnect() {
+        enableGPS()
         toggleConnect.isEnabled = true
     }
 }

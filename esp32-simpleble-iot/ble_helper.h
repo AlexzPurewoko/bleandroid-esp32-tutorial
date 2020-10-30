@@ -7,18 +7,37 @@
 #define MEM_SAVED 0
 #define BLE_DEVICENAME "D01"
 
-// UUIDS
-#define ADVERTISING_UUIDS "3ce05adf-2126-49ed-adca-fb29b1995378"
-#define SENSOR_SERVICE "71e9d6df-17fd-4a06-bf06-d07387e7fcd6"
-#define TEMP_CHARACTERISTIC "bafe94d0-4461-4fd1-b8e6-ce30bfb522e5"
-#define SETTINGS_CHARACTERISTIC "14b0a352-7384-48a0-8e4c-bb7936f8e96e"
-#define HUM_CHARACTERISTIC "edbec4d4-ab2c-4464-b837-94ab1d08db68"
+/**
+ * Universally Unique Identifier (UUID)
+ * 
+ * Is an unique ID's to idetifying the devices.
+ * In this case, we will use to identify Services, Characteristics, and Advertising
+ * These value is unique, mean that any devices should be different from others
+ * 
+ **/
+#define ADVERTISING_UUIDS "3ce05adf-2126-49ed-adca-fb29b1995378" // For advertising ID, identifies what the peripheral usages for in central devices
+#define SENSOR_SERVICE "71e9d6df-17fd-4a06-bf06-d07387e7fcd6" // For sensor service
+#define TEMP_CHARACTERISTIC "bafe94d0-4461-4fd1-b8e6-ce30bfb522e5" // For temperature characteristics
+#define SETTINGS_CHARACTERISTIC "14b0a352-7384-48a0-8e4c-bb7936f8e96e" // For Settings Characteristics
+#define HUM_CHARACTERISTIC "edbec4d4-ab2c-4464-b837-94ab1d08db68" // For Humidity Characteristics
+
 /**
  * Reserved fields 
  */
 
+/**
+ * Field @see deviceConnected is used to define the current state of connect or not.
+ **/
 bool deviceConnected = false;
+
+/**
+ * Field @see oldConnected is used to define previous connection
+ **/
 bool oldConnected = false;
+
+/**
+ * Map all instance to a variable
+ **/
 BLEServer *bleServer = NULL;
 BLEService *bleSensorService = NULL;
 BLECharacteristic *bleTempChara = NULL;
@@ -31,6 +50,7 @@ BLECharacteristic *bleSettingChara = NULL;
 
 void setDuration(int);
 int getDuration();
+void blinkLamp(int);
 
 /**
  * Callback Implementations
@@ -41,17 +61,22 @@ class SimpleBLECb : public BLEServerCallbacks
 {
   void onConnect(BLEServer *pServer)
   {
+    blinkLamp(2);
     deviceConnected = true;
   };
 
   void onDisconnect(BLEServer *pServer)
   {
+    blinkLamp(2);
     deviceConnected = false;
   }
 };
 
-// This callback called when any changes in characteristics
-// The changes related to sychronize duration.
+/**
+ * An implementation for BLECharacteristicCallback
+ * Which in here, we can receive any particular data from Central Devices
+ * 
+ */
 class ChangePeriodCallbacks : public BLECharacteristicCallbacks
 {
 
@@ -82,6 +107,11 @@ class ChangePeriodCallbacks : public BLECharacteristicCallbacks
     characteristic->notify();
   }
 
+/**
+ * 
+ * This callback will called if central devices request to read the characteristics
+ * 
+ */
   void onRead(BLECharacteristic *pCharacteristic)
   {
     char buff[2];
@@ -91,7 +121,13 @@ class ChangePeriodCallbacks : public BLECharacteristicCallbacks
     pCharacteristic->setValue(buff);
   }
 };
-
+/**
+ * Duration to performing operation data are stored in EEPROM
+ * Which can guarantee by users/tester to change its value
+ * 
+ * The data are stored in memory location 0
+ * which is in range 1 to 10
+ */
 int getDuration()
 {
   return EEPROM.read(MEM_SAVED);
@@ -105,6 +141,14 @@ void setDuration(int duration)
   EEPROM.commit();
 }
 
+
+/**
+ * Helper methods to send/notify value from specified characteristics
+ * 
+ * @param ch The BLE Characteristics
+ * @param value The string to send. Which the length shouldn't greater than 20
+ * @return void
+ */ 
 void notify(BLECharacteristic *ch, char *value)
 {
   if (!value)
@@ -113,6 +157,10 @@ void notify(BLECharacteristic *ch, char *value)
   ch->notify();
 }
 
+/**
+ * Helper methods to initialize the Bluetooth Low Energy Service
+ * Which initilizing advertising, characteristics, descriptor, GATT and more
+ */
 void initializeBLE()
 {
   // initialize ble with specific names
@@ -157,4 +205,26 @@ void initializeBLE()
   _advertising->setMinPreferred(0x00);
 
   BLEDevice::startAdvertising();
+}
+
+/**
+ * Initialize the lamp indicator
+ * Which the lamp is embedded in ESP32.
+ **/ 
+void initializeLampIndicator() {
+  pinMode(2, OUTPUT);
+}
+
+/**
+ * Blink the lamp with the count
+ * 
+ * @param count indicates the count of the lamp should be blinked
+ **/
+void blinkLamp(int count){
+  for(int i = 0; i < count; i++){
+    digitalWrite(2, HIGH);
+    delay(400);
+    digitalWrite(2, LOW);
+    delay(400);
+  }
 }

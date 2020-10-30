@@ -19,6 +19,9 @@ import java.util.*
 
 class MainViewModel(application: Application) : AndroidViewModel(application) {
 
+    /**
+     * Live
+     */
     private val _humidity = MutableLiveData<String>()
     private val _temperature = MutableLiveData<String>()
     private val _seekProgress = MutableLiveData<Int>()
@@ -180,13 +183,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 when (newState) {
                     BluetoothGatt.STATE_CONNECTED -> {
                         connectedGatt = gatt
-                        //isSelectedDeviceConnected = true
-                        //runTask {
-                            //isProcessing.postValue(true)
-                            //currentLoadingState.postValue("Discovering Services!")
-                            gatt?.discoverServices()
+                        gatt?.discoverServices()
                         isConnected = true
-                        //}
                     }
                     BluetoothGatt.STATE_DISCONNECTED -> {
                         //isSelectedDeviceConnected = false
